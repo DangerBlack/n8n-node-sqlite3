@@ -1,5 +1,5 @@
 {
-  "name": "n8n-nodes-<...>",
+  "name": "n8n-nodes-sqlite3",
   "version": "0.1.0",
   "description": "",
   "keywords": [
@@ -8,12 +8,12 @@
   "license": "MIT",
   "homepage": "",
   "author": {
-    "name": "",
-    "email": ""
+    "name": "DangerBlack",
+    "email": "daniele.baschieri+n8n@gmail.com"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/<...>/n8n-nodes-<...>.git"
+    "url": "https://github.com/DangerBlack/n8n-sqlite3-node.git"
   },
   "main": "index.js",
   "scripts": {
@@ -34,7 +34,7 @@
       "dist/credentials/HttpBinApi.credentials.js"
     ],
     "nodes": [
-      "dist/nodes/ExampleNode/ExampleNode.node.js",
+      "dist/nodes/SqliteNode/SqliteNode.node.js",
       "dist/nodes/HttpBin/HttpBin.node.js"
     ]
   },
@@ -43,10 +43,14 @@
     "eslint-plugin-n8n-nodes-base": "^1.11.0",
     "gulp": "^4.0.2",
     "n8n-workflow": "*",
+    "node-gyp": "^10.1.0",
     "prettier": "^2.7.1",
     "typescript": "~4.8.4"
   },
   "peerDependencies": {
     "n8n-workflow": "*"
+  },
+  "dependencies": {
+    "sqlite3": "^5.1.7"
   }
 }
