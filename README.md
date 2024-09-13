@@ -38,6 +38,36 @@ This node is compatible with all n8n versions that support custom nodes. Ensure 
 6. **Spread Result (Optional)**: Enable this option if you want each row of a `SELECT` query to be outputted as a separate item.
 7. **Execute the Workflow**: Run your workflow to perform the desired SQL operation.
 
+### Create table
+
+![Create table](images/create.png)
+
+Args are not needed for creating a table simply past the query.
+
+### Insert
+
+![Insert](images/insert.png)
+
+It's important to specify parameter in this syntax `$param`.
+This prevent sql-injection and it's easy to debug an error.
+
+### Auto
+
+![Auto Select Operation](images/auto_select.png)
+
+Auto select is a very powerful resource, check if the query contains one of the default instruction and use that.
+This example use the `SELECT` operation.
+
+### Spread select results
+
+![Select default](images/select_default.png)
+
+Normally nodes return 1 value for each items passed.
+
+![Select spread](images/select_spread.png)
+
+With spread operator only available for `SELECT` it's possible to return multiple items for every item requested.
+
 ## Resources
 
 - [n8n Documentation](https://docs.n8n.io/)
