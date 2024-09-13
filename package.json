@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "description": "",
   "keywords": [
-    "n8n-community-node-package"
+    "n8n-community-node-package",
+    "sqlite3",
+    "n8n"
   ],
   "license": "MIT",
   "homepage": "",
@@ -13,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/DangerBlack/n8n-sqlite3-node.git"
+    "url": "https://github.com/DangerBlack/n8n-node-sqlite3.git"
   },
   "main": "index.js",
   "scripts": {
@@ -30,12 +32,9 @@
   "n8n": {
     "n8nNodesApiVersion": 1,
     "credentials": [
-      "dist/credentials/ExampleCredentialsApi.credentials.js",
-      "dist/credentials/HttpBinApi.credentials.js"
     ],
     "nodes": [
-      "dist/nodes/SqliteNode/SqliteNode.node.js",
-      "dist/nodes/HttpBin/HttpBin.node.js"
+      "dist/nodes/SqliteNode/SqliteNode.node.js"
     ]
   },
   "devDependencies": {

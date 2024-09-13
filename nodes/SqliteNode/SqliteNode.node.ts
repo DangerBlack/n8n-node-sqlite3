@@ -11,11 +11,12 @@ export class SqliteNode implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'SQLite Node',
 		name: 'SqliteNode',
+		icon: 'file:sqlite-icon.svg',
 		group: ['transform'],
 		version: 1,
 		description: 'A node to perform query in a local sqlite database',
 		defaults: {
-			name: 'SqliteNode',
+			name: 'Sqlite Node',
 		},
 		inputs: ['main'],
 		outputs: ['main'],
@@ -35,29 +36,39 @@ export class SqliteNode implements INodeType {
 				displayName: 'Query Type',
 				name: 'query_type',
 				type: 'options',
-				default: 'SELECT',
+				default: 'AUTO',
 				noDataExpression: true,
 				required: true,
 				options: [
 					{
+						name: 'AUTO',
+						value: 'AUTO',
+						description: 'Automatically detect the query type',
+					},
+					{
 						name: 'CREATE',
 						value: 'CREATE',
+						description: 'Create a table',
 					},
 					{
 						name: 'DELETE',
 						value: 'DELETE',
+						description: 'Delete rows from a table',
 					},
 					{
 						name: 'INSERT',
 						value: 'INSERT',
+						description: 'Insert rows into a table',
 					},
 					{
 						name: 'SELECT',
 						value: 'SELECT',
+						description: 'Select rows from a table',
 					},
 					{
 						name: 'UPDATE',
 						value: 'UPDATE',
+						description: 'Update rows in a table',
 					},
 				],
 			},
@@ -66,7 +77,7 @@ export class SqliteNode implements INodeType {
 				name: 'query',
 				type: 'string',
 				default: '',
-				placeholder: 'SELECT * FROM table',
+				placeholder: 'SELECT * FROM table where key = $key',
 				description: 'The query to execute',
 				required: true,
 				typeOptions: {
@@ -78,31 +89,64 @@ export class SqliteNode implements INodeType {
 				name: 'args',
 				type: 'json',
 				default: '{}',
-				placeholder: '{"key": "value"}',
+				placeholder: '{"$key": "value"}',
 				description: 'The args that get passed to the query',
 			},
+			{
+				displayName: 'Spread Result',
+				name: 'spread',
+				type: 'boolean',
+				default: false,
+				description: 'Whether the result should be spread into multiple items',
+				displayOptions: {
+					show: {
+						query_type: [
+							'SELECT',
+						],
+					},
+				},				
+			}
 		],
 	};
 
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
-
 		let item: INodeExecutionData;
-		let db_path: string;
-		let query: string;
-		let args_string: string;
-		let query_type: string;
-		let args: any;
 
+		let spreadResults = [];
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {
-				db_path = this.getNodeParameter('db_path', itemIndex, '') as string;
-				query = this.getNodeParameter('query', itemIndex, '') as string;
-				args_string = this.getNodeParameter('args', itemIndex, '') as string;
-				query_type = this.getNodeParameter('query_type', itemIndex, '') as string;
-				args = JSON.parse(args_string);
-
 				item = items[itemIndex];
+				let db_path = this.getNodeParameter('db_path', itemIndex, '') as string;
+				let query = this.getNodeParameter('query', itemIndex, '') as string;
+				let args_string = this.getNodeParameter('args', itemIndex, '') as string;
+				let args = JSON.parse(args_string);
+				let query_type = this.getNodeParameter('query_type', itemIndex, '') as string;
+				let spread = this.getNodeParameter('spread', itemIndex, '') as boolean;
+
+				if(query_type === 'AUTO') {
+					if(query.trim().toUpperCase().includes('SELECT')) {
+						query_type = 'SELECT';
+					} else if(query.trim().toUpperCase().includes('INSERT')) {
+						query_type = 'INSERT';
+					} else if(query.trim().toUpperCase().includes('UPDATE')) {
+						query_type = 'UPDATE';
+					} else if(query.trim().toUpperCase().includes('DELETE')) {
+						query_type = 'DELETE';
+					} else if(query.trim().toUpperCase().includes('CREATE')) {
+						query_type = 'CREATE';
+					} else {
+						query_type = 'AUTO';
+					}
+				}
+
+				if (db_path === '') {
+					throw new NodeOperationError(this.getNode(), 'No database path provided.');
+				}
+
+				if (query === '') {
+					throw new NodeOperationError(this.getNode(), 'No query provided.');
+				}
 
 				const db = new sqlite3.Database(db_path);
 				const results = await new Promise((resolve, reject) => {
@@ -135,7 +179,19 @@ export class SqliteNode implements INodeType {
 				});
 				db.close();
 
-				item.json = results as any;
+				if(query_type === 'SELECT' && spread) 
+				{
+					// If spread is true, spread the result into multiple items
+					const newItems = (results as any[]).map((result: any) => {
+						return { json: result };
+					});
+					spreadResults.push(...newItems);
+					//item.json = results as any;
+				} 
+				else 
+				{
+					item.json = results as any;
+				}
 			} catch (error) {
 				// This node should never fail but we want to showcase how
 				// to handle errors.
@@ -154,6 +210,10 @@ export class SqliteNode implements INodeType {
 					});
 				}
 			}
+		}
+
+		if(spreadResults.length > 0) {
+			return this.prepareOutputData(spreadResults);
 		}
 
 		return this.prepareOutputData(items);

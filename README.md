@@ -1,47 +1,57 @@
-![Banner image](https://user-images.githubusercontent.com/10284570/173569848-c624317f-42b1-45a6-ab09-f0ea3c247648.png)
+# n8n-nodes-sqlite3
 
-# n8n-nodes-starter
+This is an n8n community node. It lets you use SQLite3 in your n8n workflows.
 
-This repo contains example nodes to help you get started building your own custom integrations for [n8n](n8n.io). It includes the node linter and other dependencies.
+SQLite3 is a lightweight, self-contained SQL database engine that stores all data in a single file and requires no server setup. It is ideal for embedded applications, local storage, and small to medium-sized projects. As a public-domain software, it is free for use in both personal and commercial applications.
 
-To make your custom node available to the community, you must create it as an npm package, and [submit it to the npm registry](https://docs.npmjs.com/packages-and-modules/contributing-packages-to-the-registry).
+[n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
 
-## Prerequisites
+## Installation
 
-You need the following installed on your development machine:
+Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes/installation/) in the n8n community nodes documentation.
 
-* [git](https://git-scm.com/downloads)
-* Node.js and npm. Minimum version Node 16. You can find instructions on how to install both using nvm (Node Version Manager) for Linux, Mac, and WSL [here](https://github.com/nvm-sh/nvm). For Windows users, refer to Microsoft's guide to [Install NodeJS on Windows](https://docs.microsoft.com/en-us/windows/dev-environment/javascript/nodejs-on-windows).
-* Install n8n with:
-	```
-	npm install n8n -g
-	```
-* Recommended: follow n8n's guide to [set up your development environment](https://docs.n8n.io/integrations/creating-nodes/build/node-development-environment/).
+To use this node in your n8n instance:
 
+1. Clone or download the repository containing this node.
+2. Copy the node files into the appropriate directory in your n8n installation.
+3. Restart your n8n instance to load the new node.
 
-## Using this starter
+## Operations
 
-These are the basic steps for working with the starter. For detailed guidance on creating and publishing nodes, refer to the [documentation](https://docs.n8n.io/integrations/creating-nodes/).
+- **Flexible Query Execution**: Supports multiple SQL operations (`SELECT`, `INSERT`, `UPDATE`, `DELETE`, `CREATE`) to manage your database.
+- **Dynamic Query Type Detection**: Automatically detects the query type if not explicitly specified.
+- **Parameterized Queries**: Pass dynamic parameters to your queries for secure and efficient database operations.
+- **Spread Results Option**: Option to spread the result of a `SELECT` query into multiple items for further processing in n8n.
+- **Error Handling**: Built-in error handling that allows you to continue workflow execution even if an error occurs.
 
-1. [Generate a new repository](https://github.com/n8n-io/n8n-nodes-starter/generate) from this template repository.
-2. Clone your new repo:
-    ```
-    git clone https://github.com/<your organization>/<your-repo-name>.git
-    ```
-3. Run `npm i` to install dependencies.
-4. Open the project in your editor.
-5. Browse the examples in `/nodes` and `/credentials`. Modify the examples, or replace them with your own nodes.
-6. Update the `package.json` to match your details.
-7. Run `npm run lint` to check for errors or `npm run lintfix` to automatically fix errors when possible.
-8. Test your node locally. Refer to [Run your node locally](https://docs.n8n.io/integrations/creating-nodes/test/run-node-locally/) for guidance.
-9. Replace this README with documentation for your node. Use the [README_TEMPLATE](README_TEMPLATE.md) to get started.
-10. Update the LICENSE file to use your details.
-11. [Publish](https://docs.npmjs.com/packages-and-modules/contributing-packages-to-the-registry) your package to npm.
+## Compatibility
 
-## More information
+This node is compatible with all n8n versions that support custom nodes. Ensure your n8n instance is up to date to take advantage of the latest features and bug fixes.
 
-Refer to our [documentation on creating nodes](https://docs.n8n.io/integrations/creating-nodes/) for detailed information on building your own nodes.
+## Usage
 
-## License
+1. **Add the SQLite Node**: Drag and drop the SQLite Node into your n8n workflow.
+2. **Configure Database Path**: Set the path to your SQLite database file.
+3. **Choose Query Type**: Select a query type or leave it as `AUTO` to detect automatically.
+4. **Write Your Query**: Enter the SQL query you want to execute.
+5. **Provide Arguments (Optional)**: If your query uses parameters, provide them in JSON format.
+6. **Spread Result (Optional)**: Enable this option if you want each row of a `SELECT` query to be outputted as a separate item.
+7. **Execute the Workflow**: Run your workflow to perform the desired SQL operation.
 
-[MIT](https://github.com/n8n-io/n8n-nodes-starter/blob/master/LICENSE.md)
+## Resources
+
+- [n8n Documentation](https://docs.n8n.io/)
+- [SQLite Documentation](https://www.sqlite.org/docs.html)
+- [n8n Documentation](https://docs.n8n.io/integrations/creating-nodes/build/declarative-style-node/#step-35-add-operations)
+- [medium article](https://medium.com/@tarikalaouimhamdi/how-to-create-your-own-n8n-node-package-f298675712f0)
+- [SQLite3 package](https://www.npmjs.com/package/sqlite3)
+- [sqlite3 wiki](https://github.com/TryGhost/node-sqlite3/wiki/API)
+- [n8n Documentations UI](https://docs.n8n.io/integrations/creating-nodes/build/reference/ui-elements/#string)
+
+## Contributing
+
+Contributions are welcome! If you have any feature requests, bug reports, or suggestions, feel free to open an issue or submit a pull request.
+
+---
+
+Start integrating SQLite3 into your n8n workflows today with this community node! 🛠️🚀
