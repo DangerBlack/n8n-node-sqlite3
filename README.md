@@ -13,8 +13,13 @@ Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes
 To use this node in your n8n instance:
 
 1. Clone or download the repository containing this node.
-2. Copy the node files into the appropriate directory in your n8n installation.
+2. Copy the node files into the appropriate directory in your n8n installation. `~/.n8n/custom`
 3. Restart your n8n instance to load the new node.
+
+In order to build
+
+npm run build
+npm link
 
 ## Operations
 

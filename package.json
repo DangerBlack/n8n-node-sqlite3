@@ -31,8 +31,7 @@
   ],
   "n8n": {
     "n8nNodesApiVersion": 1,
-    "credentials": [
-    ],
+    "credentials": [],
     "nodes": [
       "dist/nodes/SqliteNode/SqliteNode.node.js"
     ]
@@ -40,7 +39,7 @@
   "devDependencies": {
     "@typescript-eslint/parser": "~5.45",
     "eslint-plugin-n8n-nodes-base": "^1.11.0",
-    "gulp": "^4.0.2",
+    "gulp": "^5.0.0",
     "n8n-workflow": "*",
     "node-gyp": "^10.1.0",
     "prettier": "^2.7.1",
