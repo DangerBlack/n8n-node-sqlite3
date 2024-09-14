@@ -7,7 +7,7 @@
     "sqlite3",
     "n8n"
   ],
-  "license": "BSD-3-Clause",
+  "license": "MIT",
   "homepage": "",
   "author": {
     "name": "DangerBlack",
