@@ -63,7 +63,7 @@ export class SqliteNode implements INodeType {
 					{
 						name: 'SELECT',
 						value: 'SELECT',
-						description: 'Select rows from a table',
+						description: 'Select rows from a table (support for multiple queries)',
 					},
 					{
 						name: 'UPDATE',
@@ -109,13 +109,16 @@ export class SqliteNode implements INodeType {
 		],
 	};
 
-	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> 
+	{
 		const items = this.getInputData();
 		let item: INodeExecutionData;
 
 		let spreadResults = [];
-		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
-			try {
+		for(let itemIndex = 0; itemIndex < items.length; itemIndex++) 
+		{
+			try 
+			{
 				item = items[itemIndex];
 				let db_path = this.getNodeParameter('db_path', itemIndex, '') as string;
 				let query = this.getNodeParameter('query', itemIndex, '') as string;
@@ -124,42 +127,92 @@ export class SqliteNode implements INodeType {
 				let query_type = this.getNodeParameter('query_type', itemIndex, '') as string;
 				let spread = this.getNodeParameter('spread', itemIndex, '') as boolean;
 
-				if(query_type === 'AUTO') {
-					if(query.trim().toUpperCase().includes('SELECT')) {
+				if(query_type === 'AUTO') 
+				{
+					if(query.trim().toUpperCase().includes('SELECT')) 
 						query_type = 'SELECT';
-					} else if(query.trim().toUpperCase().includes('INSERT')) {
+					else if(query.trim().toUpperCase().includes('INSERT')) 
 						query_type = 'INSERT';
-					} else if(query.trim().toUpperCase().includes('UPDATE')) {
+					else if(query.trim().toUpperCase().includes('UPDATE')) 
 						query_type = 'UPDATE';
-					} else if(query.trim().toUpperCase().includes('DELETE')) {
+					else if(query.trim().toUpperCase().includes('DELETE')) 
 						query_type = 'DELETE';
-					} else if(query.trim().toUpperCase().includes('CREATE')) {
+					else if(query.trim().toUpperCase().includes('CREATE')) 
 						query_type = 'CREATE';
-					} else {
+					else 
 						query_type = 'AUTO';
-					}
 				}
 
-				if (db_path === '') {
+				if(db_path === '') 
 					throw new NodeOperationError(this.getNode(), 'No database path provided.');
-				}
+				
 
-				if (query === '') {
+				if(query === '') 
 					throw new NodeOperationError(this.getNode(), 'No query provided.');
-				}
 
 				const db = new sqlite3.Database(db_path);
-				const results = await new Promise((resolve, reject) => {
-					if (query_type === 'SELECT') {
+				const results = await new Promise<any|any[]>(async (resolve, reject) => 
+				{
+					if(query_type === 'SELECT') 
+					{
+						// if query contains multiple queries, split them and execute them one by one
+						let queries = query.split(';').filter(q => q.trim() !== '');
+						if(queries.length > 1)
+						{
+
+							let results = await Promise.all(queries.map(async (q) => 
+							{
+								const query_args = { ...args };
+								for(const key in query_args) 
+								{
+									if(!q.includes(key)) 
+										delete query_args[key];
+								}
+									
+								return await new Promise<any|any[]>(async (resolve1, reject1) => 
+								{
+									// For SELECT queries, use db.all() to get all rows
+									db.all(q, query_args, (error, rows) => 
+									{
+										if(error) 
+											return reject1(error);
+
+										return resolve1(rows);
+									});
+								});
+							}));
+
+							return resolve(results);
+						}
+
+						const query_args = { ...args };
+						for(const key in query_args) 
+						{
+							if(!query.includes(key)) 
+								delete query_args[key];
+						}
+
 						// For SELECT queries, use db.all() to get all rows
-						db.all(query, args, (error, rows) => {
+						db.all(query, query_args, (error, rows) => 
+						{
 							if(error) 
 								return reject(error);
+
 							return resolve(rows);
 						});
-					} else if (['INSERT', 'UPDATE', 'DELETE'].includes(query_type)) {
+					} 
+					else if(['INSERT', 'UPDATE', 'DELETE'].includes(query_type)) 
+					{
+						const query_args = { ...args };
+						for(const key in query_args) 
+						{
+							if(!query.includes(key)) 
+								delete query_args[key];
+						}
+
 						// For INSERT, UPDATE, DELETE queries, use db.run() 
-						db.run(query, args, function (error) {
+						db.run(query, query_args, function (error) 
+						{
 							if(error) 
 								return reject(error);
 							// Provide information like affected rows, last inserted id, etc.
@@ -168,9 +221,19 @@ export class SqliteNode implements INodeType {
 								last_id: this.lastID // The last inserted row ID
 							});
 						});
-					} else {
+					} 
+					else 
+					{
+						const query_args = { ...args };
+						for(const key in query_args) 
+						{
+							if(!query.includes(key)) 
+								delete query_args[key];
+						}
+
 						// For other SQL commands (like CREATE, DROP, etc.), use db.run()
-						db.run(query, args, (error) => {
+						db.run(query, query_args, (error) => 
+						{
 							if(error) 
 								return reject(error);
 							return resolve({ message: 'Query executed successfully.' });
@@ -182,29 +245,38 @@ export class SqliteNode implements INodeType {
 				if(query_type === 'SELECT' && spread) 
 				{
 					// If spread is true, spread the result into multiple items
-					const newItems = (results as any[]).map((result: any) => {
-						return { json: result };
+					const newItems = results.map((result: any) => 
+					{
+						if(Array.isArray(result))
+							return { json: {items: result} }; 
+						else 
+							return { json: result };
 					});
+					
 					spreadResults.push(...newItems);
-					//item.json = results as any;
+				} 
+				else 
+					item.json = results;
+			} 
+			catch(error) 
+			{
+				// This node should never fail but we want to showcase how
+				// to handle errors.
+				if(this.continueOnFail()) 
+				{
+					items.push({ json: this.getInputData(itemIndex)[0].json, error, pairedItem: itemIndex });
 				} 
 				else 
 				{
-					item.json = results as any;
-				}
-			} catch (error) {
-				// This node should never fail but we want to showcase how
-				// to handle errors.
-				if (this.continueOnFail()) {
-					items.push({ json: this.getInputData(itemIndex)[0].json, error, pairedItem: itemIndex });
-				} else {
 					// Adding `itemIndex` allows other workflows to handle this error
-					if (error.context) {
+					if(error.context) 
+					{
 						// If the error thrown already contains the context property,
 						// only append the itemIndex
 						error.context.itemIndex = itemIndex;
 						throw error;
 					}
+
 					throw new NodeOperationError(this.getNode(), error, {
 						itemIndex,
 					});
@@ -212,9 +284,8 @@ export class SqliteNode implements INodeType {
 			}
 		}
 
-		if(spreadResults.length > 0) {
+		if(spreadResults.length > 0) 
 			return this.prepareOutputData(spreadResults);
-		}
 
 		return this.prepareOutputData(items);
 	}

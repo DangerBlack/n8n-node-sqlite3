@@ -18,8 +18,10 @@ To use this node in your n8n instance:
 
 In order to build
 
+```
 npm run build
 npm link
+```
 
 ## Operations
 
