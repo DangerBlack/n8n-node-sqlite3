@@ -116,7 +116,7 @@ Start integrating SQLite3 into your n8n workflows today with this community node
 docker build -t better-sqlite3-builder .
 
 docker run --rm -it \
-  -v %CURRENT_DIR/.tmp:/app \
-  -v %CURRENT_DIR/native/node-v127-linux-musl-x64:/output \
+  -v ./.tmp:/app \
+  -v ./native/node-v127-linux-musl-x64:/output \
   better-sqlite3-builder
 ```
