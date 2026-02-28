@@ -3,7 +3,6 @@ import {
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
-		NodeConnectionType,
 	NodeOperationError,
 } from 'n8n-workflow';
 import type { Database as BetterSqlite3Database } from 'better-sqlite3';
@@ -63,8 +62,8 @@ export class SqliteNode implements INodeType {
 		defaults: {
 			name: 'Sqlite Node',
 		},
-		inputs: [NodeConnectionType.Main] as NodeConnectionType[],
-		outputs: [NodeConnectionType.Main] as NodeConnectionType[],
+		inputs: ['main'],
+		outputs: ['main'],
 		properties: [
 			// Node properties which the user gets displayed and
 			// can change on the node.
