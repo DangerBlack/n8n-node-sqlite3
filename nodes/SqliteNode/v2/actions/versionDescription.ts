@@ -10,6 +10,7 @@ export const versionDescription: INodeTypeDescription = {
 	version: 2,
 	subtitle: '={{ $parameter["operation"] }}',
 	description: 'Get, add, update, and delete data in a SQLite database',
+	usableAsTool: true,
 	defaults: {
 		name: 'SQLite',
 	},

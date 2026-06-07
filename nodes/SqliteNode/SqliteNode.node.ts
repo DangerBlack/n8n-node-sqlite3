@@ -13,6 +13,7 @@ export class SqliteNode extends VersionedNodeType {
 			defaultVersion: 2,
 			description: 'Get, add, update, and delete data in a SQLite database',
 			parameterPane: 'wide',
+			usableAsTool: true,
 		};
 
 		const nodeVersions: IVersionedNodeType['nodeVersions'] = {
