@@ -11,7 +11,7 @@ export async function router(this: IExecuteFunctions): Promise<INodeExecutionDat
 	const resource = this.getNodeParameter('resource', 0) as string;
 	const operation = this.getNodeParameter('operation', 0) as string;
 	const nodeOptions = (this.getNodeParameter('options', 0) as IDataObject) || {};
-	const credentials = await this.getCredentials<SqliteNodeCredentials>('sqliteCredentials');
+	const credentials = await this.getCredentials<SqliteNodeCredentials>('sqliteCredentialsApi');
 
 	const db = createConnection.call(this, credentials);
 

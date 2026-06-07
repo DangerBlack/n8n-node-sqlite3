@@ -1,7 +1,7 @@
 import type { ICredentialType, INodeProperties } from 'n8n-workflow';
 
 export class SqliteCredentials implements ICredentialType {
-	name = 'sqliteCredentials';
+	name = 'sqliteCredentialsApi';
 
 	displayName = 'SQLite Database';
 

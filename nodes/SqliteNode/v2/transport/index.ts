@@ -1,6 +1,8 @@
 import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
+
+const nativeBinding = path.join(__dirname, '../../../../../native/node-v127-linux-musl-x64/better_sqlite3.node');
 import type {
 	ICredentialTestFunctions,
 	IExecuteFunctions,
@@ -32,7 +34,7 @@ export function createConnection(
 			throw err;
 		}
 	}
-	return new Database(dbPath);
+	return new Database(dbPath, fs.existsSync(nativeBinding) ? { nativeBinding } : {});
 }
 
 export function closeConnection(db: SqliteDatabase): void {

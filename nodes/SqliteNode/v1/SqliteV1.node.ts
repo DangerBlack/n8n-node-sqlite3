@@ -1,3 +1,4 @@
+/* eslint-disable n8n-nodes-base/node-filename-against-convention */
 import type { IDataObject } from 'n8n-workflow';
 import {
 	IExecuteFunctions,
@@ -97,7 +98,7 @@ export class SqliteV1 implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'SQLite Node',
 		name: 'sqliteNode',
-		icon: 'file:../../assets/sqlite-icon.svg',
+		icon: 'file:sqlite-icon.svg',
 		group: ['transform'],
 		version: 1,
 		description: 'A node to perform query in a local sqlite database',

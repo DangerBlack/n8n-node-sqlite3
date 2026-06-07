@@ -17,6 +17,12 @@ export const description: INodeProperties[] = [
 		noDataExpression: true,
 		options: [
 			{
+				name: 'Create or Update',
+				value: 'upsert',
+				description: 'Create a new record, or update the current one if it already exists (upsert)',
+				action: 'Insert or update rows',
+			},
+			{
 				name: 'Delete',
 				value: 'delete',
 				description: 'Delete rows or drop a table',
@@ -33,12 +39,6 @@ export const description: INodeProperties[] = [
 				value: 'insert',
 				description: 'Insert rows into a table',
 				action: 'Insert rows',
-			},
-			{
-				name: 'Insert or Update',
-				value: 'upsert',
-				description: 'Insert or update rows (ON CONFLICT)',
-				action: 'Insert or update rows',
 			},
 			{
 				name: 'Select',

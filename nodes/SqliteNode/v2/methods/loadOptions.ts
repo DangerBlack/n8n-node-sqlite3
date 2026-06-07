@@ -4,7 +4,7 @@ import { escapeSqlIdentifier } from '../helpers/utils';
 import { closeConnection, createConnection } from '../transport';
 
 export async function getColumns(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-	const credentials = await this.getCredentials<SqliteNodeCredentials>('sqliteCredentials');
+	const credentials = await this.getCredentials<SqliteNodeCredentials>('sqliteCredentialsApi');
 	const table = this.getNodeParameter('table', 0, { extractValue: true }) as string;
 	if (!table) {
 		return [];
@@ -15,7 +15,7 @@ export async function getColumns(this: ILoadOptionsFunctions): Promise<INodeProp
 		return columns.map((col) => ({
 			name: col.name,
 			value: col.name,
-			description: `type: ${col.type || 'ANY'}, nullable: ${col.notnull === 0}`,
+			description: 'Type: ,, nullable: ,',
 		}));
 	} finally {
 		closeConnection(db);

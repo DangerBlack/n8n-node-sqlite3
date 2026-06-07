@@ -14,6 +14,7 @@ const properties: INodeProperties[] = [
 		displayName: 'Data Mode',
 		name: 'dataMode',
 		type: 'options',
+		default: 'autoMapInputData',
 		options: [
 			{
 				name: 'Auto-Map Input Data to Columns',
@@ -26,7 +27,6 @@ const properties: INodeProperties[] = [
 				description: 'Set the value for each column manually',
 			},
 		],
-		default: DATA_MODE.AUTO_MAP,
 		description: 'How to map input data to table columns',
 	},
 	{
@@ -51,9 +51,10 @@ const properties: INodeProperties[] = [
 				name: 'values',
 				values: [
 					{
-						displayName: 'Column',
+						displayName: 'Column Name or ID',
 						name: 'column',
 						type: 'options',
+						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 						typeOptions: {
 							loadOptionsMethod: 'getColumns',
 							loadOptionsDependsOn: ['table.value'],

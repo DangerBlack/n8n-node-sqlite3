@@ -48,6 +48,25 @@ export const optionsCollection: INodeProperties = {
 	placeholder: 'Add option',
 	options: [
 		{
+			displayName: 'Output Column Names or IDs',
+			name: 'outputColumns',
+			type: 'multiOptions',
+			description: 'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+			typeOptions: {
+				loadOptionsMethod: 'getColumnsMultiOptions',
+				loadOptionsDependsOn: ['table.value'],
+			},
+			default: [],
+			displayOptions: { show: { '/operation': ['select'] } },
+		},
+		{
+			displayName: 'Output Query Execution Details',
+			name: 'detailedOutput',
+			type: 'boolean',
+			default: false,
+			description: 'Whether to include executed query details in output',
+		},
+		{
 			displayName: 'Query Batching',
 			name: 'queryBatching',
 			type: 'options',
@@ -69,6 +88,15 @@ export const optionsCollection: INodeProperties = {
 			default: SINGLE,
 		},
 		{
+			displayName: 'Query Parameters',
+			name: 'queryReplacement',
+			type: 'string',
+			default: '',
+			placeholder: 'e.g. value1,value2,value3',
+			description: 'Comma-separated values to use as $1, $2, $3 in Execute SQL',
+			displayOptions: { show: { '/operation': ['executeQuery'] } },
+		},
+		{
 			displayName: 'Replace Empty Strings with NULL',
 			name: 'replaceEmptyStrings',
 			type: 'boolean',
@@ -79,29 +107,11 @@ export const optionsCollection: INodeProperties = {
 			},
 		},
 		{
-			displayName: 'Output Query Execution Details',
-			name: 'detailedOutput',
-			type: 'boolean',
-			default: false,
-			description: 'Include executed query details in output',
-		},
-		{
-			displayName: 'Output Columns',
-			name: 'outputColumns',
-			type: 'multiOptions',
-			typeOptions: {
-				loadOptionsMethod: 'getColumnsMultiOptions',
-				loadOptionsDependsOn: ['table.value'],
-			},
-			default: [],
-			displayOptions: { show: { '/operation': ['select'] } },
-		},
-		{
 			displayName: 'Select Distinct',
 			name: 'selectDistinct',
 			type: 'boolean',
 			default: false,
-			description: 'Return distinct rows only',
+			description: 'Whether to return distinct rows only',
 			displayOptions: { show: { '/operation': ['select'] } },
 		},
 		{
@@ -109,17 +119,8 @@ export const optionsCollection: INodeProperties = {
 			name: 'skipOnConflict',
 			type: 'boolean',
 			default: false,
-			description: 'Use INSERT OR IGNORE to skip rows that violate unique constraints',
+			description: 'Whether to use INSERT OR IGNORE to skip rows that violate unique constraints',
 			displayOptions: { show: { '/operation': ['insert'] } },
-		},
-		{
-			displayName: 'Query Parameters',
-			name: 'queryReplacement',
-			type: 'string',
-			default: '',
-			placeholder: 'e.g. value1,value2,value3',
-			description: 'Comma-separated values to use as $1, $2, $3 in Execute SQL',
-			displayOptions: { show: { '/operation': ['executeQuery'] } },
 		},
 	],
 };
@@ -138,10 +139,10 @@ export const selectRowsFixedCollection: INodeProperties = {
 			name: 'values',
 			values: [
 				{
-					displayName: 'Column',
+					displayName: 'Column Name or ID',
 					name: 'column',
 					type: 'options',
-					description: 'Column to filter on',
+					description: 'Column to filter on. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 					default: '',
 					typeOptions: {
 						loadOptionsMethod: 'getColumns',
@@ -181,9 +182,10 @@ export const sortFixedCollection: INodeProperties = {
 			name: 'values',
 			values: [
 				{
-					displayName: 'Column',
+					displayName: 'Column Name or ID',
 					name: 'column',
 					type: 'options',
+					description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 					default: '',
 					typeOptions: {
 						loadOptionsMethod: 'getColumns',

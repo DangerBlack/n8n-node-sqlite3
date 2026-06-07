@@ -8,7 +8,7 @@ export class SqliteNode extends VersionedNodeType {
 		const baseDescription: INodeTypeBaseDescription = {
 			displayName: 'SQLite',
 			name: 'sqliteNode',
-			icon: 'file:../../assets/sqlite-icon.svg',
+			icon: 'file:sqlite-icon.svg',
 			group: ['transform'],
 			defaultVersion: 2,
 			description: 'Get, add, update, and delete data in a SQLite database',
