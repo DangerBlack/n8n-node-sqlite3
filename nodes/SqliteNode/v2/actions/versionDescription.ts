@@ -18,7 +18,6 @@ export const versionDescription: INodeTypeDescription = {
 		{
 			name: 'sqliteCredentials',
 			required: true,
-			testedBy: 'sqliteConnectionTest',
 		},
 	],
 	properties: [

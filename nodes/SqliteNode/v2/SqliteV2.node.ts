@@ -3,7 +3,6 @@ import type { INodeTypeBaseDescription } from 'n8n-workflow';
 import { router } from './actions/router';
 import { searchTables } from './methods/listSearch';
 import { getColumns, getColumnsMultiOptions } from './methods/loadOptions';
-import { sqliteConnectionTest } from './methods/credentialTest';
 import { versionDescription } from './actions/versionDescription';
 
 export class SqliteV2 implements INodeType {
@@ -19,7 +18,6 @@ export class SqliteV2 implements INodeType {
 	methods = {
 		listSearch: { searchTables },
 		loadOptions: { getColumns, getColumnsMultiOptions },
-		credentialTest: { sqliteConnectionTest },
 	};
 
 	async execute(this: IExecuteFunctions) {
