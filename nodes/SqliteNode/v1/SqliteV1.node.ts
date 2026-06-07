@@ -115,6 +115,7 @@ export class SqliteV1 implements INodeType {
 				placeholder: '/path/to/database.sqlite',
 				description: 'The path to the SQLite database file',
 				required: true,
+				noDataExpression: true,
 			},
 			{
 				displayName: 'Query Type',
