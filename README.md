@@ -2,7 +2,7 @@
 
 This is an n8n community node. It lets you use SQLite3 in your n8n workflows.
 
-SQLite3 is a lightweight, self-contained SQL database engine that stores all data in a single file and requires no server setup. It is ideal for embedded applications, local storage, and small to medium-sized projects. As a public-domain software, it is free for use in both personal and commercial applications.
+SQLite3 is a lightweight, self-contained SQL database engine that stores all data in a single file and requires no server setup. It is ideal for embedded applications, local storage, and small to medium-sized projects.
 
 [n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
 
@@ -10,109 +10,75 @@ SQLite3 is a lightweight, self-contained SQL database engine that stores all dat
 
 Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes/installation/) in the n8n community nodes documentation.
 
-To use this node in your n8n instance:
+For local development:
 
-1. Clone or download the repository containing this node.
-2. Copy the node files into the appropriate directory in your n8n installation. `~/.n8n/custom`
-3. Restart your n8n instance to load the new node.
-
-In order to build
-
-```
+```bash
 npm run build
 npm link
+cd ~/.n8n/nodes
+npm link n8n-nodes-sqlite3
 ```
+
+## Credentials
+
+The node uses a **SQLite** credential to store the database path. Configure it with an absolute path to your SQLite file:
+
+```
+/home/user/data/mydb.sqlite
+```
+
+The directory will be created automatically if it does not exist. The file will be created on first write if it does not exist.
 
 ## Operations
 
-- **Flexible Query Execution**: Supports multiple SQL operations (`SELECT`, `INSERT`, `UPDATE`, `DELETE`, `CREATE`) to manage your database.
-- **Dynamic Query Type Detection**: Automatically detects the query type if not explicitly specified.
-- **Parameterized Queries**: Pass dynamic parameters to your queries for secure and efficient database operations.
-- **Spread Results Option**: Option to spread the result of a `SELECT` query into multiple items for further processing in n8n.
-- **Error Handling**: Built-in error handling that allows you to continue workflow execution even if an error occurs.
+All operations are available under the **Database** resource.
 
-## Compatibility
+| Operation | Description |
+|-----------|-------------|
+| **Select** | Query rows from a table with optional WHERE filters and column selection |
+| **Insert** | Insert one or more rows into a table |
+| **Update** | Update rows matching a WHERE condition |
+| **Delete** | Delete rows matching a WHERE condition |
+| **Upsert** | Insert or replace rows based on a conflict key |
+| **Execute Query** | Run arbitrary SQL, including multi-statement scripts |
 
-This node is compatible with all n8n versions that support custom nodes. Ensure your n8n instance is up to date to take advantage of the latest features and bug fixes.
+### Execute Query
 
-## Usage
+Use this operation for DDL statements (`CREATE TABLE`, `DROP`, `ALTER`) or any SQL not covered by the structured operations. Multiple statements separated by `;` are all executed in a single call.
 
-1. **Add the SQLite Node**: Drag and drop the SQLite Node into your n8n workflow.
-2. **Configure Database Path**: Set the path to your SQLite database file.
-3. **Choose Query Type**: Select a query type or leave it as `AUTO` to detect automatically.
-4. **Write Your Query**: Enter the SQL query you want to execute.
-5. **Provide Arguments (Optional)**: If your query uses parameters, provide them in JSON format.
-6. **Spread Result (Optional)**: Enable this option if you want each row of a `SELECT` query to be outputted as a separate item.
-7. **Execute the Workflow**: Run your workflow to perform the desired SQL operation.
-
-### Create table
-
-![Create table](images/create.png)
-
-```sqlite
+```sql
 CREATE TABLE IF NOT EXISTS employees (
-    id INTEGER PRIMARY KEY,
+    id   INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
-    age INTEGER
+    age  INTEGER
 );
 ```
 
-Args are not needed for creating a table simply past the query.
+### Parameterized queries
 
-### Insert
+When using **Execute Query**, use positional placeholders `$1`, `$2`, `$3`, … in the SQL and provide the corresponding values as a comma-separated string in **Options → Query Parameters**:
 
-![Insert](images/insert.png)
-
-It's important to specify parameter in this syntax `@param`, it's also supported `$param` for backwards compatibility.
-
-```
-INSERT INTO employees (name, age) VALUES (@name, @age);
+```sql
+INSERT INTO employees (name, age) VALUES ($1, $2);
 ```
 
-### Auto
+Query Parameters: `Alice, 30`
 
-![Auto Select Operation](images/auto_select.png)
+Placeholders are replaced in order — `$1` maps to the first value, `$2` to the second, and so on.
 
-Auto select is a very powerful resource, check if the query contains one of the default instruction and use that.
-This example use the `SELECT` operation.
+### Spread results
 
-### Spread select results
+The **Select** operation has a **Spread Results** option. When enabled, each returned row becomes a separate n8n item instead of returning all rows as a single array item.
 
-![Select default](images/select_default.png)
+## Compatibility
 
-Normally nodes return 1 value for each items passed.
+Requires n8n with community node support. The native `better-sqlite3` binding is pre-compiled for the musl-based Docker image shipped by n8n (`node-v127-linux-musl-x64`). If you run n8n outside that environment you may need to rebuild the binding (see below).
 
-![Select spread](images/select_spread.png)
+## Building the native binding
 
-With spread operator only available for `SELECT` it's possible to return multiple items for every item requested.
+The pre-built binary targets `node-v127-linux-musl-x64` (the default n8n Docker image). To rebuild for a different target:
 
-![Use default bindings](images/use_default_bindings.png)
-
-If you are running this node outside of docker apline provided by n8n you may ended up having this issue:
-`libc.musl-x86_64.so.1: cannot open shared object file: No such file or directory`.
-You can try adding the optional parameter use default bindings and turn it on.
-
-## Resources
-
-- [n8n Documentation](https://docs.n8n.io/)
-- [SQLite Documentation](https://www.sqlite.org/docs.html)
-- [n8n Documentation](https://docs.n8n.io/integrations/creating-nodes/build/declarative-style-node/#step-35-add-operations)
-- [medium article](https://medium.com/@tarikalaouimhamdi/how-to-create-your-own-n8n-node-package-f298675712f0)
-- [Better SQLite3 package](https://www.npmjs.com/package/better-sqlite3)
-- [sqlite3 wiki](https://github.com/TryGhost/node-sqlite3/wiki/API)
-- [n8n Documentations UI](https://docs.n8n.io/integrations/creating-nodes/build/reference/ui-elements/#string)
-
-## Contributing
-
-Contributions are welcome! If you have any feature requests, bug reports, or suggestions, feel free to open an issue or submit a pull request.
-
----
-
-Start integrating SQLite3 into your n8n workflows today with this community node! 🛠️🚀
-
-## How to build and ship the proper better-sqlite3 version
-
-```
+```bash
 docker build -t better-sqlite3-builder .
 
 docker run --rm -it \
@@ -120,3 +86,15 @@ docker run --rm -it \
   -v ./native/node-v127-linux-musl-x64:/output \
   better-sqlite3-builder
 ```
+
+Replace the output path with the appropriate ABI/platform directory for your target environment.
+
+## Resources
+
+- [n8n Community Nodes documentation](https://docs.n8n.io/integrations/community-nodes/)
+- [SQLite documentation](https://www.sqlite.org/docs.html)
+- [better-sqlite3](https://github.com/WiseLibs/better-sqlite3)
+
+## Contributing
+
+Contributions are welcome. Open an issue or pull request on GitHub.
