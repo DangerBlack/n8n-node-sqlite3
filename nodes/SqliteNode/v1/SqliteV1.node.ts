@@ -1,6 +1,7 @@
 import type { IDataObject } from 'n8n-workflow';
 import {
 	IExecuteFunctions,
+	INode,
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
@@ -11,42 +12,85 @@ import path from 'path';
 import fs from 'fs';
 import Database from 'better-sqlite3';
 
+enum QueryType {
+	AUTO = 'AUTO',
+	CREATE = 'CREATE',
+	DELETE = 'DELETE',
+	INSERT = 'INSERT',
+	SELECT = 'SELECT',
+	UPDATE = 'UPDATE',
+}
+
+interface AdditionalOptions {
+	use_default_bindings?: boolean;
+	use_custom_bindings?: string;
+}
+
 const binaryPath = path.join(__dirname, '../../../../native/node-v127-linux-musl-x64/better_sqlite3.node');
 
-async function all(db: BetterSqlite3Database, query: string, args: Record<string, unknown>): Promise<unknown> {
-	return new Promise((resolve, reject) => {
-		try {
-			const rows = db.prepare(query).all(args);
-			resolve(rows);
-		} catch (error) {
-			reject(error);
-		}
-	});
+function detectQueryType(query: string): QueryType {
+	const upper = query.trim().toUpperCase();
+	if (/^SELECT\b/.test(upper)) return QueryType.SELECT;
+	if (/^INSERT\b/.test(upper)) return QueryType.INSERT;
+	if (/^UPDATE\b/.test(upper)) return QueryType.UPDATE;
+	if (/^DELETE\b/.test(upper)) return QueryType.DELETE;
+	if (/^CREATE\b/.test(upper)) return QueryType.CREATE;
+	return QueryType.AUTO;
 }
 
-async function run(db: BetterSqlite3Database, query: string, args: Record<string, unknown>): Promise<unknown> {
-	return new Promise((resolve, reject) => {
-		try {
-			const result = db.prepare(query).run(args);
-			resolve({
-				changes: result.changes,
-				last_id: result.lastInsertRowid,
-			});
-		} catch (error) {
-			reject(error);
+function parseArgs(node: INode, argsString: string): Record<string, unknown> {
+	try {
+		const raw = JSON.parse(argsString || '{}') as Record<string, unknown>;
+		const args: Record<string, unknown> = {};
+		for (const key in raw) {
+			args[key.replace(/\$/g, '')] = raw[key];
 		}
-	});
+		return args;
+	} catch {
+		throw new NodeOperationError(node, 'Args must be valid JSON.');
+	}
 }
 
-async function exec(db: BetterSqlite3Database, query: string): Promise<unknown> {
-	return new Promise((resolve, reject) => {
-		try {
-			db.exec(query);
-			resolve({ message: 'Query executed successfully.' });
-		} catch (error) {
-			reject(error);
+function filterArgs(query: string, args: Record<string, unknown>): Record<string, unknown> {
+	const used: Record<string, unknown> = {};
+	for (const key in args) {
+		if (query.includes(key)) used[key] = args[key];
+	}
+	return used;
+}
+
+function getBindings(node: INode, opts: AdditionalOptions): Database.Options {
+	if (opts.use_default_bindings) return {};
+	if (opts.use_custom_bindings) {
+		if (!fs.existsSync(opts.use_custom_bindings)) {
+			throw new NodeOperationError(node, `Custom bindings file not found at ${opts.use_custom_bindings}`);
 		}
-	});
+		return { nativeBinding: opts.use_custom_bindings };
+	}
+	return { nativeBinding: binaryPath };
+}
+
+function wrapError(node: INode, error: unknown, itemIndex: number): never {
+	const err = error as Error & { context?: Record<string, unknown> };
+	if (err.context) {
+		err.context.itemIndex = itemIndex;
+		throw error;
+	}
+	throw new NodeOperationError(node, err, { itemIndex, message: err.message });
+}
+
+function all(db: BetterSqlite3Database, query: string, args: Record<string, unknown>): unknown[] {
+	return db.prepare(query).all(args);
+}
+
+function run(db: BetterSqlite3Database, query: string, args: Record<string, unknown>): { changes: number; last_id: number | bigint } {
+	const result = db.prepare(query).run(args);
+	return { changes: result.changes, last_id: result.lastInsertRowid };
+}
+
+function exec(db: BetterSqlite3Database, query: string): { message: string } {
+	db.exec(query);
+	return { message: 'Query executed successfully.' };
 }
 
 export class SqliteV1 implements INodeType {
@@ -84,7 +128,7 @@ export class SqliteV1 implements INodeType {
 					{ name: 'CREATE', value: 'CREATE', description: 'Create a table' },
 					{ name: 'DELETE', value: 'DELETE', description: 'Delete rows from a table' },
 					{ name: 'INSERT', value: 'INSERT', description: 'Insert rows into a table' },
-					{ name: 'SELECT', value: 'SELECT', description: 'Select rows from a table' },
+					{ name: 'SELECT', value: 'SELECT', description: 'Select rows from a table (support for multiple queries)' },
 					{ name: 'UPDATE', value: 'UPDATE', description: 'Update rows in a table' },
 				],
 			},
@@ -146,144 +190,72 @@ export class SqliteV1 implements INodeType {
 		const outputItems: INodeExecutionData[] = [];
 
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
-			let dbPath = this.getNodeParameter('db_path', itemIndex, '') as string;
+			const dbPath = this.getNodeParameter('db_path', itemIndex, '') as string;
 			let query = this.getNodeParameter('query', itemIndex, '') as string;
-			const argsString = this.getNodeParameter('args', itemIndex, '') as string;
-			let queryType = this.getNodeParameter('query_type', itemIndex, '') as string;
-			const spread = this.getNodeParameter('spread', itemIndex, '') as boolean;
+			const argsString = this.getNodeParameter('args', itemIndex, '{}') as string;
+			let queryType = this.getNodeParameter('query_type', itemIndex, QueryType.AUTO) as QueryType;
+			const spread = this.getNodeParameter('spread', itemIndex, false) as boolean;
+			const additionalOptions = this.getNodeParameter('additionalOptions', itemIndex, {}) as AdditionalOptions;
 
-			const additionalOptions = this.getNodeParameter('additionalOptions', 0, {}) as {
-				use_default_bindings?: boolean;
-				use_custom_bindings?: string;
-			};
-
-			const useDefaultBindings = additionalOptions.use_default_bindings ?? false;
-			const useCustomBindings = additionalOptions.use_custom_bindings;
-
-			if (queryType === 'AUTO') {
-				const q = query.trim().toUpperCase();
-				if (q.includes('SELECT')) queryType = 'SELECT';
-				else if (q.includes('INSERT')) queryType = 'INSERT';
-				else if (q.includes('UPDATE')) queryType = 'UPDATE';
-				else if (q.includes('DELETE')) queryType = 'DELETE';
-				else if (q.includes('CREATE')) queryType = 'CREATE';
-				else queryType = 'AUTO';
-			}
-
-			if (dbPath === '') throw new NodeOperationError(this.getNode(), 'No database path provided.');
-			if (query === '') throw new NodeOperationError(this.getNode(), 'No query provided.');
+			if (!dbPath) throw new NodeOperationError(this.getNode(), 'No database path provided.');
+			if (!query) throw new NodeOperationError(this.getNode(), 'No query provided.');
 
 			query = query.replace(/\$/g, '@');
+			queryType = queryType === QueryType.AUTO ? detectQueryType(query) : queryType;
 
-			let bindings: Database.Options = { nativeBinding: binaryPath };
-			if (useDefaultBindings) {
-				bindings = {};
-			}
-			if (useCustomBindings) {
-				if (fs.existsSync(useCustomBindings)) {
-					bindings.nativeBinding = useCustomBindings;
-				} else {
-					throw new NodeOperationError(
-						this.getNode(),
-						`Custom bindings file not found at ${useCustomBindings}`,
-					);
-				}
-			}
+			const bindings = getBindings(this.getNode(), additionalOptions);
 
 			const dir = path.dirname(dbPath);
 			if (dir && dir !== '.') {
 				try {
-					if (!fs.existsSync(dir)) {
-						fs.mkdirSync(dir, { recursive: true });
-					}
+					if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 				} catch (err) {
 					const code = (err as NodeJS.ErrnoException)?.code;
 					if (code === 'EACCES' || code === 'EPERM') {
 						throw new NodeOperationError(
 							this.getNode(),
-							`Permission denied: cannot create directory "${dir}". Use a path in a location you can write to (e.g. your home or project folder).`,
+							`Permission denied: cannot create directory "${dir}". Use a path in a location you can write to.`,
 						);
 					}
 					throw err;
 				}
 			}
+
 			const db = new Database(dbPath, bindings);
 			try {
-				const argsT = JSON.parse(argsString || '{}') as Record<string, unknown>;
-				const args: Record<string, unknown> = {};
-				for (const key in argsT) {
-					args[key.replace(/\$/g, '')] = argsT[key];
-				}
-
+				const args = parseArgs(this.getNode(), argsString);
 				let results: unknown;
-				if (queryType === 'SELECT') {
+
+				if (queryType === QueryType.SELECT) {
 					const queries = query.split(';').filter((q) => q.trim() !== '');
-					if (queries.length > 1) {
-						results = await Promise.all(
-							queries.map(async (q) => {
-								const queryArgs = { ...args };
-								for (const key in queryArgs) {
-									if (!q.includes(key)) delete queryArgs[key];
-								}
-								return all(db, q, queryArgs);
-							}),
-						);
-					} else {
-						const queryArgs = { ...args };
-						for (const key in queryArgs) {
-							if (!query.includes(key)) delete queryArgs[key];
-						}
-						results = await all(db, query, queryArgs);
-					}
-				} else if (['INSERT', 'UPDATE', 'DELETE'].includes(queryType)) {
-					const queryArgs = { ...args };
-					for (const key in queryArgs) {
-						if (!query.includes(key)) delete queryArgs[key];
-					}
-					results = await run(db, query, queryArgs);
+					results = queries.length > 1
+						? await Promise.all(queries.map((q) => all(db, q, filterArgs(q, args))))
+						: all(db, query, filterArgs(query, args));
+				} else if ([QueryType.INSERT, QueryType.UPDATE, QueryType.DELETE].includes(queryType)) {
+					results = run(db, query, filterArgs(query, args));
 				} else {
-					const queryArgs = { ...args };
-					for (const key in queryArgs) {
-						if (!query.includes(key)) delete queryArgs[key];
-					}
-					results = await exec(db, query);
+					results = exec(db, query);
 				}
 
-				if (queryType === 'SELECT' && spread) {
+				if (queryType === QueryType.SELECT && spread) {
 					const resultArray = Array.isArray(results) ? results : [results];
 					for (const result of resultArray) {
 						const rows = Array.isArray(result) ? result : [result];
 						for (const row of rows) {
-						outputItems.push({
-							json: row as IDataObject,
-							pairedItem: { item: itemIndex },
-						});
+							outputItems.push({ json: row as IDataObject, pairedItem: { item: itemIndex } });
 						}
 					}
 				} else {
-				outputItems.push({
-					json: results as IDataObject,
-					pairedItem: { item: itemIndex },
-				});
+					outputItems.push({ json: results as IDataObject, pairedItem: { item: itemIndex } });
 				}
 			} catch (error) {
 				if (this.continueOnFail()) {
 					outputItems.push({
-						json: {
-							error: (error as Error).message || 'Unknown error',
-						},
+						json: { error: (error as Error).message || 'Unknown error' },
 						pairedItem: { item: itemIndex },
 					});
 				} else {
-					const err = error as Error & { context?: unknown };
-					if (err.context) {
-						(err.context as Record<string, unknown>).itemIndex = itemIndex;
-						throw error;
-					}
-					throw new NodeOperationError(this.getNode(), error as Error, {
-						itemIndex,
-						message: (error as Error).message,
-					});
+					wrapError(this.getNode(), error, itemIndex);
 				}
 			} finally {
 				db.close();
