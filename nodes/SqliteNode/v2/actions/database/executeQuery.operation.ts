@@ -20,7 +20,7 @@ const properties: INodeProperties[] = [
 		type: 'boolean',
 		default: false,
 		noDataExpression: true,
-		description: 'Whether to allow n8n expressions inside the SQL query. When enabled, expressions like {{ $JSON.value }} are evaluated before the query is sent to SQLite. Only enable this with trusted data — passing unsanitized user input into the query string can lead to SQL injection.',
+		description: 'Whether to allow n8n expressions inside the SQL query. When enabled, expressions like {{ $JSON.value }} are evaluated before the query is sent to SQLite. Only enable this with trusted data, passing unsanitized user input into the query string can lead to SQL injection.',
 	},
 	{
 		displayName: 'Query',
@@ -43,7 +43,7 @@ const properties: INodeProperties[] = [
 		placeholder: 'e.g. SELECT * FROM {{ $json.tableName }}',
 		required: true,
 		description:
-			"The SQL query to execute. Expressions are evaluated before the query runs — do not pass unsanitized user input here.",
+			"The SQL query to execute. Expressions are evaluated before the query runs, do not pass unsanitized user input here.",
 		typeOptions: { rows: 5 },
 		displayOptions: { show: { allowExpressions: [true] } },
 	},
