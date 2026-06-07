@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-sqlite3",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Custom n8n nodes for interacting with SQLite3 databases through SQL queries",
   "keywords": [
     "n8n-community-node-package",
