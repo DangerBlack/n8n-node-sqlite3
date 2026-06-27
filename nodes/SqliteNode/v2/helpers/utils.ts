@@ -15,7 +15,10 @@ export function updateDisplayOptions(
 ): INodeProperties[] {
 	return properties.map((p) => ({
 		...p,
-		displayOptions: { ...p.displayOptions, ...displayOptions } as INodeProperties['displayOptions'],
+		displayOptions: {
+			show: { ...p.displayOptions?.show, ...displayOptions?.show },
+			hide: { ...p.displayOptions?.hide, ...displayOptions?.hide },
+		} as INodeProperties['displayOptions'],
 	}));
 }
 

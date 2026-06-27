@@ -34,7 +34,12 @@ export function createConnection(
 			throw err;
 		}
 	}
-	return new Database(dbPath, fs.existsSync(nativeBinding) ? { nativeBinding } : {});
+	if (fs.existsSync(nativeBinding)) {
+		try {
+			return new Database(dbPath, { nativeBinding });
+		} catch {}
+	}
+	return new Database(dbPath);
 }
 
 export function closeConnection(db: SqliteDatabase): void {
