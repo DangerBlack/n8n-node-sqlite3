@@ -21,7 +21,9 @@ RUN apk add --no-cache python3 make g++ linux-headers sqlite-dev
 WORKDIR /build
 
 CMD set -e && \
-    npm install better-sqlite3 node-gyp && \
+    # Pinned to the range this package depends on: N-API keeps binaries compatible
+    # across Node versions, not across better-sqlite3 major versions.
+    npm install "better-sqlite3@^13.0.3" node-gyp && \
     # better-sqlite3 skips the build when it already ships a prebuild for the host,
     # so force it; this is the same thing its own "build-release" script does.
     (cd node_modules/better-sqlite3 && ../.bin/node-gyp rebuild --release --force_build=1) && \

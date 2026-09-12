@@ -16,8 +16,9 @@ import path from 'path';
  * the user compiled themselves.
  *
  *   1. `N8N_SQLITE3_NATIVE_BINDING`, if set, wins over everything.
- *   2. better-sqlite3's own prebuilt binary (the normal case, in Docker and natively).
- *   3. A binding bundled with this package under `native/` (see `npm run prebuilds`).
+ *   2. A binding chosen on the node itself (the v1 "Use Custom Bindings" option).
+ *   3. better-sqlite3's own prebuilt binary (the normal case, in Docker and natively).
+ *   4. A binding bundled with this package under `native/` (see `npm run prebuilds`).
  *
  * better-sqlite3's own binary is preferred over our bundled copy because it is always
  * version-matched to the JavaScript that loads it.
@@ -142,6 +143,50 @@ function bindingFailureMessage(reason: string): string {
 }
 
 /**
+ * The binding sources to try, in order. `undefined` means better-sqlite3's own
+ * resolution. Exported so the precedence can be asserted in tests without needing a
+ * runtime that can actually load every candidate.
+ */
+export function bindingCandidates(
+	options: OpenDatabaseOptions = {},
+): Array<string | undefined> {
+	// The environment variable is the operator-level escape hatch, so it wins even over
+	// a path stored in a node — which is exactly the value that may need overriding.
+	const override = bindingOverride();
+	if (override) return [override];
+
+	if (options.nativeBinding) return [options.nativeBinding];
+
+	// better-sqlite3's own prebuilt binary, always version-matched to the library.
+	const candidates: Array<string | undefined> = [undefined];
+
+	if (!options.useDefaultBindings) {
+		const bundled = resolveNativeBinding();
+		if (bundled) candidates.push(bundled);
+	}
+
+	return candidates;
+}
+
+/** Node's own signals that loading a `.node` file failed. */
+const BINDING_ERROR_CODES = ['ERR_DLOPEN_FAILED', 'MODULE_NOT_FOUND'];
+
+/**
+ * Opening a database both loads the addon and opens the file, so only genuine loading
+ * failures may be retried against another binding. Everything else — SQLite's own
+ * errors, and better-sqlite3's validation of the path and options — is the caller's
+ * problem and must be propagated as it is, or a missing directory ends up reported as
+ * a native binding failure.
+ */
+function isBindingError(error: unknown): boolean {
+	const code = (error as { code?: unknown })?.code;
+	if (typeof code === 'string' && BINDING_ERROR_CODES.includes(code)) return true;
+
+	const message = (error as Error)?.message;
+	return typeof message === 'string' && message.includes(BINDING_FILE);
+}
+
+/**
  * Open a database, trying each binding source in turn so the same package works inside
  * the n8n Docker image and on a plain Node installation.
  */
@@ -149,25 +194,14 @@ export function openDatabase(
 	dbPath: string,
 	options: OpenDatabaseOptions = {},
 ): BetterSqlite3Database {
-	const candidates: Array<string | undefined> = [];
-
-	const explicit = options.nativeBinding ?? bindingOverride();
-	if (explicit) {
-		candidates.push(explicit);
-	} else {
-		// better-sqlite3's own prebuilt binary, version-matched to the library.
-		candidates.push(undefined);
-		if (!options.useDefaultBindings) {
-			const bundled = resolveNativeBinding();
-			if (bundled) candidates.push(bundled);
-		}
-	}
+	const candidates = bindingCandidates(options);
 
 	let lastError: unknown;
 	for (const nativeBinding of candidates) {
 		try {
 			return nativeBinding ? new Database(dbPath, { nativeBinding }) : new Database(dbPath);
 		} catch (error) {
+			if (!isBindingError(error)) throw error;
 			lastError = error;
 		}
 	}

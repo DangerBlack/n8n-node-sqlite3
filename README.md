@@ -116,13 +116,16 @@ the n8n Docker image (Alpine/musl) and on a plain Node installation (glibc, macO
 
 The binding is resolved at runtime, in this order:
 
-1. `N8N_SQLITE3_NATIVE_BINDING`, if set, pointing at a `better_sqlite3.node` file.
-2. The binding `better-sqlite3` ships — the normal case, always version-matched to the library.
-3. A binding bundled with this package under `native/<platform>-<libc>-<arch>/`, as a fallback
-   for installations where the one above cannot be loaded.
+1. `N8N_SQLITE3_NATIVE_BINDING`, if set, pointing at a `better_sqlite3.node` file. As the
+   operator-level escape hatch it wins over everything, including a path stored in a node.
+2. A binding chosen on the node itself (the v1 **Use Custom Bindings** option).
+3. The binding `better-sqlite3` ships — the normal case, always version-matched to the library.
+4. A binding bundled with this package under `native/<platform>-<libc>-<arch>/`, as a fallback
+   for installations where the one above cannot be loaded. The v1 **Use Default Bindings**
+   option skips it.
 
-The SQLite node (v1) also exposes **Use Custom Bindings** and **Use Default Bindings** options
-if you want to decide per node.
+Only genuine loading failures move on to the next candidate: errors from SQLite itself, or from
+an invalid database path, are reported as they are.
 
 ## Bundling a binding
 
