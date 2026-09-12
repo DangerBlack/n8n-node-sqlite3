@@ -11,7 +11,8 @@ import {
 import type { Database as BetterSqlite3Database } from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
-import Database from 'better-sqlite3';
+import { openDatabase, resolveNativeBinding } from '../shared/binding';
+import type { OpenDatabaseOptions } from '../shared/binding';
 
 enum QueryType {
 	AUTO = 'AUTO',
@@ -27,7 +28,9 @@ interface AdditionalOptions {
 	use_custom_bindings?: string;
 }
 
-const binaryPath = path.join(__dirname, '../../../../native/node-v127-linux-musl-x64/better_sqlite3.node');
+// Shown as the default of the "Use Custom Bindings" option, so users can see which
+// binding this runtime picked up and point somewhere else if they need to.
+const binaryPath = resolveNativeBinding() ?? '';
 
 function detectQueryType(query: string): QueryType {
 	const upper = query.trim().toUpperCase();
@@ -60,15 +63,16 @@ function filterArgs(query: string, args: Record<string, unknown>): Record<string
 	return used;
 }
 
-function getBindings(node: INode, opts: AdditionalOptions): Database.Options {
-	if (opts.use_default_bindings) return {};
+function getBindings(node: INode, opts: AdditionalOptions): OpenDatabaseOptions {
+	if (opts.use_default_bindings) return { useDefaultBindings: true };
 	if (opts.use_custom_bindings) {
 		if (!fs.existsSync(opts.use_custom_bindings)) {
 			throw new NodeOperationError(node, `Custom bindings file not found at ${opts.use_custom_bindings}`);
 		}
 		return { nativeBinding: opts.use_custom_bindings };
 	}
-	return { nativeBinding: binaryPath };
+	// No explicit choice: the bundled binding for this ABI/platform, else better-sqlite3's own.
+	return {};
 }
 
 function wrapError(node: INode, error: unknown, itemIndex: number): never {
@@ -223,7 +227,7 @@ export class SqliteV1 implements INodeType {
 				}
 			}
 
-			const db = new Database(dbPath, bindings);
+			const db = openDatabase(dbPath, bindings);
 			try {
 				const args = parseArgs(this.getNode(), argsString);
 				let results: unknown;
