@@ -24,6 +24,7 @@
     "format": "prettier nodes --write",
     "lint": "eslint nodes package.json",
     "lintfix": "eslint nodes package.json --fix",
+    "prebuilds": "node scripts/sync-prebuilds.mjs",
     "prepublishOnly": "npm run build && npm run lint -c .eslintrc.prepublish.js nodes package.json",
     "test": "jest"
   },
@@ -56,6 +57,6 @@
     "n8n-workflow": "*"
   },
   "dependencies": {
-    "better-sqlite3": "^12.6.2"
+    "better-sqlite3": "^13.0.3"
   }
 }

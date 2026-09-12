@@ -1,13 +1,11 @@
-import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
-
-const nativeBinding = path.join(__dirname, '../../../../../native/node-v127-linux-musl-x64/better_sqlite3.node');
 import type {
 	ICredentialTestFunctions,
 	IExecuteFunctions,
 	ILoadOptionsFunctions,
 } from 'n8n-workflow';
+import { openDatabase } from '../../shared/binding';
 import type { SqliteDatabase, SqliteNodeCredentials } from '../helpers/interfaces';
 
 export function createConnection(
@@ -34,12 +32,7 @@ export function createConnection(
 			throw err;
 		}
 	}
-	if (fs.existsSync(nativeBinding)) {
-		try {
-			return new Database(dbPath, { nativeBinding });
-		} catch {}
-	}
-	return new Database(dbPath);
+	return openDatabase(dbPath);
 }
 
 export function closeConnection(db: SqliteDatabase): void {

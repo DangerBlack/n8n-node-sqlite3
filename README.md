@@ -106,22 +106,49 @@ When the agent calls the Execute SQL tool, it fills in the query autonomously. E
 
 ## Compatibility
 
-Requires n8n with community node support. The native `better-sqlite3` binding is pre-compiled for the musl-based Docker image shipped by n8n (`node-v127-linux-musl-x64`). When running outside Docker the node automatically falls back to the system's own bindings with no configuration needed.
+Requires n8n with community node support, and Node 22 or newer.
 
-## Building the native binding
+Since v13 `better-sqlite3` is an [N-API](https://nodejs.org/api/n-api.html) addon: it ships a
+prebuilt binding for every supported platform inside its own npm package, and those binaries
+are **not tied to the Node ABI**. The same file keeps working when n8n bumps its Node version,
+so nothing has to be rebuilt for each n8n release. The node works out of the box both inside
+the n8n Docker image (Alpine/musl) and on a plain Node installation (glibc, macOS, Windows).
 
-The pre-built binary targets `node-v127-linux-musl-x64` (the default n8n Docker image). To rebuild for a different target:
+The binding is resolved at runtime, in this order:
+
+1. `N8N_SQLITE3_NATIVE_BINDING`, if set, pointing at a `better_sqlite3.node` file.
+2. The binding `better-sqlite3` ships — the normal case, always version-matched to the library.
+3. A binding bundled with this package under `native/<platform>-<libc>-<arch>/`, as a fallback
+   for installations where the one above cannot be loaded.
+
+The SQLite node (v1) also exposes **Use Custom Bindings** and **Use Default Bindings** options
+if you want to decide per node.
+
+## Bundling a binding
+
+`native/` ships musl builds for the n8n Docker image. To refresh them after upgrading
+`better-sqlite3`, or to bundle more platforms:
+
+```bash
+npm run prebuilds                 # musl x64 + arm64 (the n8n Docker image)
+npm run prebuilds -- --all        # every platform better-sqlite3 ships
+npm run prebuilds -- --clean      # drop bundled bindings that are no longer selected
+```
+
+This copies the binaries out of `node_modules/better-sqlite3/prebuilds` — no compiler and no
+network access involved.
+
+## Building a binding from source
+
+Only needed for a platform `better-sqlite3` publishes no prebuild for:
 
 ```bash
 docker build -t better-sqlite3-builder .
-
-docker run --rm -it \
-  -v ./.tmp:/app \
-  -v ./native/node-v127-linux-musl-x64:/output \
-  better-sqlite3-builder
+docker run --rm -v "$PWD/native:/output" better-sqlite3-builder
 ```
 
-Replace the output path with the appropriate ABI/platform directory for your target environment.
+The binding is written to `native/<platform>-<libc>-<arch>/better_sqlite3.node`, where the node
+picks it up automatically. Edit the base image in the `Dockerfile` to target a different platform.
 
 ## Resources
 
